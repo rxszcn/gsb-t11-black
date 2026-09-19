@@ -13,6 +13,7 @@ from black.nodes import (
     STANDALONE_COMMENT,
     TEST_DESCENDANTS,
     child_towards,
+    is_block_header,
     is_docstring,
     is_import,
     is_multiline_string,
@@ -130,6 +131,16 @@ class Line:
     def is_with_or_async_with_stmt(self) -> bool:
         """Is this a with_stmt line?"""
         return bool(self) and is_with_or_async_with_stmt(self.leaves[0])
+
+    @property
+    def is_block_header(self) -> bool:
+        """Is this line the header of a block-opening compound statement?
+
+        This matches both the sync and async forms of `if`, `for`, `while`,
+        `try`, `with` and `match` statements, but not their `elif`/`else`/
+        `except`/`finally` continuation clauses nor `def`/`class` definitions.
+        """
+        return bool(self) and is_block_header(self.leaves[0])
 
     @property
     def is_class(self) -> bool:
@@ -1039,10 +1050,7 @@ class EmptyLineTracker:
                     not depth
                     and previous_def.depth
                     and current_line.leaves[-1].type == token.COLON
-                    and (
-                        current_line.leaves[0].value
-                        not in ("with", "try", "for", "while", "if", "match")
-                    )
+                    and not current_line.is_block_header
                 ):
                     # We shouldn't add two newlines between an indented function and
                     # a dependent non-indented clause. This is to avoid issues with

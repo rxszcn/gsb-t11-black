@@ -956,6 +956,36 @@ def is_async_stmt_or_funcdef(leaf: Leaf) -> bool:
     )
 
 
+def is_block_header(leaf: Leaf) -> bool:
+    """Return True if the given leaf starts a block-opening compound statement.
+
+    This covers the header of an `if`, `for`, `while`, `try`, `with` or `match`
+    statement, including their `async for` and `async with` forms. It does not
+    match continuation clauses such as `elif`, `else`, `except` and `finally`
+    (which are not the first child of their statement) nor `def`/`class`
+    definitions.
+    """
+    parent = leaf.parent
+    if parent is None:
+        return False
+    if parent.type in {
+        syms.if_stmt,
+        syms.for_stmt,
+        syms.while_stmt,
+        syms.try_stmt,
+        syms.with_stmt,
+        syms.match_stmt,
+    }:
+        return parent.children[0] is leaf
+    if parent.type == syms.async_stmt and parent.children[0] is leaf:
+        # `async for`/`async with`; exclude `async def` handled elsewhere.
+        return leaf.next_sibling is not None and leaf.next_sibling.type in {
+            syms.for_stmt,
+            syms.with_stmt,
+        }
+    return False
+
+
 def is_type_comment(leaf: Leaf, mode: Mode) -> bool:
     """Return True if the given leaf is a type comment. This function should only
     be used for general type comments (excluding ignore annotations, which should
