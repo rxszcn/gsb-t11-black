@@ -943,6 +943,33 @@ def is_with_or_async_with_stmt(leaf: Leaf) -> bool:
     )
 
 
+def is_block_stmt_opener(leaf: Leaf) -> bool:
+    """Return True if the given leaf opens a new block statement.
+
+    This covers the `with`, `try`, `for`, `while`, `if` and `match` headers
+    along with their `async` variants, but not continuation clauses such as
+    `else`, `elif`, `except`, `finally` or `case`.
+    """
+    parent = leaf.parent
+    if parent is None:
+        return False
+    if leaf.type == token.ASYNC:
+        return parent.type == syms.async_stmt
+    return bool(
+        leaf.type == token.NAME
+        and parent.type
+        in {
+            syms.with_stmt,
+            syms.try_stmt,
+            syms.for_stmt,
+            syms.while_stmt,
+            syms.if_stmt,
+            syms.match_stmt,
+        }
+        and parent.children[0] is leaf
+    )
+
+
 def is_async_stmt_or_funcdef(leaf: Leaf) -> bool:
     """Return True if the given leaf starts an async def/for/with statement.
 

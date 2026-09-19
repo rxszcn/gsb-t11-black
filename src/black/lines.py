@@ -13,6 +13,7 @@ from black.nodes import (
     STANDALONE_COMMENT,
     TEST_DESCENDANTS,
     child_towards,
+    is_block_stmt_opener,
     is_docstring,
     is_import,
     is_multiline_string,
@@ -1039,10 +1040,7 @@ class EmptyLineTracker:
                     not depth
                     and previous_def.depth
                     and current_line.leaves[-1].type == token.COLON
-                    and (
-                        current_line.leaves[0].value
-                        not in ("with", "try", "for", "while", "if", "match")
-                    )
+                    and not is_block_stmt_opener(current_line.leaves[0])
                 ):
                     # We shouldn't add two newlines between an indented function and
                     # a dependent non-indented clause. This is to avoid issues with
